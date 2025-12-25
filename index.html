@@ -55,27 +55,37 @@
         const colors = ['black', 'green', 'red', 'gray', 'blue'];
 
         // Загружаем иконки из папки icons/
-        async function loadIcons() {
-            const iconsPanel = document.getElementById('iconsPanel');
-            const response = await fetch('icons/');
-            // Показываем все SVG файлы (можно расширить)
-            const iconFiles = ['test.svg'];
-            
-            iconFiles.forEach(filename => {
-                const icon = document.createElement('div');
-                icon.className = 'icon-item';
-                icon.draggable = true;
-                icon.dataset.filename = filename;
-                icon.innerHTML = `<svg class="icon-svg" style="width:100%;height:100%;color:#fff"><use href="icons/${filename}#icon"/></svg>`;
-                icon.addEventListener('dragstart', handleDragStart);
-                iconsPanel.appendChild(icon);
-            });
+        const ICON_FILES = ['test.svg'];
+
+        function loadIcons() {
+        const iconsPanel = document.getElementById('iconsPanel');
+
+        ICON_FILES.forEach(filename => {
+        const icon = document.createElement('div');
+        icon.className = 'icon-item';
+        icon.draggable = true;
+        icon.dataset.filename = filename;
+
+        const img = document.createElement('img');
+        img.src = `icons/${filename}`;   // путь относительный от index.html
+        img.alt = filename;
+        img.style.width = '100%';
+        img.style.height = '100%';
+
+        icon.appendChild(img);
+        icon.addEventListener('dragstart', handleDragStart);
+        iconsPanel.appendChild(icon);
+        });
         }
+        
+        loadIcons();
+
 
         // Drag & Drop обработчики
         let draggedIcon = null;
         function handleDragStart(e) {
-            draggedIcon = e.target.dataset.filename;
+            const el = e.currenttarget;
+            draggedIcon = el.dataset.filename;
             e.dataTransfer.setData('text/plain', draggedIcon);
             e.target.style.opacity = '0.5';
         }
