@@ -104,8 +104,9 @@
             if (!filename) return;
 
             const color = colors[Math.floor(Math.random() * colors.length)]; // Случайный цвет
-            const latlng = map.mouseEventToLayerPoint(e);
+            const latlng = map.mouseEventToLatLng(e);
             
+            console.log('latlng on drop:', latlng);
             addDraggableMarker(filename, latlng, color);
         });
 
