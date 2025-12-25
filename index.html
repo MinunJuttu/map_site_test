@@ -98,10 +98,11 @@
         map.getContainer().addEventListener('drop', function(e) {
             e.preventDefault();
             const filename = e.dataTransfer.getData('text/plain');
+            if (!filename) return;
             const color = colors[Math.floor(Math.random() * colors.length)]; // Случайный цвет
-            const coords = map.mouseEventToLayerPoint(e).toBounds([0,0]);
+            const coords = map.mouseEventToLayerPoint(e);
             
-            addDraggableMarker(filename, coords.getCenter(), color);
+            addDraggableMarker(filename, latlng, color);
         });
 
         // Добавление метки на карту
