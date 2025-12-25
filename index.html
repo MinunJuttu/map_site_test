@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная Карта</title>
+    
+    <!-- 1. Подключаем стили Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body { margin: 0; padding: 0; }
+        /* Карта будет занимать весь экран */
+        #map { height: 100vh; width: 100%; background: #222; }
+        
+        /* Стилизация всплывающего окна (поп-апа) */
+        .popup-content h3 { margin: 0 0 5px; color: #333; }
+        .popup-content img { max-width: 100%; border-radius: 4px; margin-bottom: 5px; }
+        .popup-content a { display: inline-block; margin-top: 5px; color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+    <!-- 2. Контейнер для карты -->
+    <div id="map"></div>
+
+    <!-- 3. Подключаем скрипт Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // --- НАСТРОЙКИ ---
+        // Укажите реальные размеры вашего изображения в пикселях!
+        const imgWidth = 6348;  
+        const imgHeight = 7402;
+        const imgUrl = 'map.png'; // Путь к вашему изображению
+
+        // --- ИНИЦИАЛИЗАЦИЯ КАРТЫ ---
+        // CRS.Simple — ключевой момент. Это говорит карте, что мы используем
+        // плоскую картинку, а не земной шар с широтой и долготой.
+        const map = L.map('map', {
+            crs: L.CRS.Simple,
+            minZoom: -2, // Разрешаем отдалять карту
+            maxZoom: 2   // Разрешаем приближать
+        });
+
+        // Задаем границы картинки в координатах карты
+        // В Leaflet координаты [Y, X], то есть [Высота, Ширина]
+        const bounds = [[0, 0], [imgHeight, imgWidth]];
+
+        // Добавляем картинку на карту
+        L.imageOverlay(imgUrl, bounds).addTo(map);
+
+        // Центрируем карту по изображению
+        map.fitBounds(bounds);
+
+        // --- ДОБАВЛЕНИЕ МЕТОК ---
+        
+        // Пример добавления одной метки вручную
+        // Координаты: [Y (снизу вверх или сверху вниз), X (слева направо)]
+        // В CRS.Simple [0,0] обычно левый нижний угол, но это зависит от настройки.
+        // Проще всего кликнуть по карте (см. код ниже), чтобы узнать координаты.
+        
+        const marker = L.marker([3616, 3032]).addTo(map);
+        marker.bindPopup(`
+            <div class="popup-content">
+                <h3>Первый лагерь</h3>
+                <img src="castle_thumb.jpg" alt="Castle">
+                <p>Поспешно сделанный лагерь, в котором вы можете отдохнуть перед следующим приключением.</p>
+                <a href="article_base.html">Читать статью →</a>
+            </div>
+        `);
+
+        // --- ПОЛЕЗНАЯ УТИЛИТА ДЛЯ ВАС ---
+        // Этот код выводит координаты клика в консоль браузера (F12).
+        // Используйте это, чтобы расставить метки: кликните, скопируйте цифры, вставьте в код.
+        map.on('click', function(e) {
+            console.log("Координаты клика: [" + e.latlng.lat + ", " + e.latlng.lng + "]");
+        });
+
+    </script>
+</body>
+</html>
