@@ -15,7 +15,7 @@
             overflow-y: auto; border-right: 2px solid #444;
         }
         .icon-item {
-            width: 40px; height: 40px; margin: 8px auto; cursor: grab;
+            width: 50px; height: 50px; margin: 8px auto; cursor: grab;
             filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
             transition: transform 0.2s;
         }
@@ -114,7 +114,7 @@
         function addDraggableMarker(filename, latlng, color) {
             const iconUrl = `icons/${filename}`;
             const customIcon = L.divIcon({
-                html: `<img src="${iconUrl}" class="leaflet-marker-icon marker-${color}" style="width:40px;height:40px;"/>`,
+                html: `<img src="${iconUrl}" class="leaflet-marker-icon marker-${color}" style="width:35px;height:35px;"/>`,
                 iconSize: [48, 48],
                 className: 'custom-marker',
                 iconAnchor: [24, 24]
