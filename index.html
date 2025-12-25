@@ -82,7 +82,8 @@
         let draggedIcon = null;
         function handleDragStart(e) {
             const el = e.currentTarget;
-            draggedIcon = el.dataset.filename;
+            const filename = el.dataset.filename;
+            if (!filename) return;
 
             draggedIcon = filename;
             e.dataTransfer.setData('text/plain', filename);
