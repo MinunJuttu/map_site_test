@@ -24,13 +24,6 @@
         
         /* Карта */
         #map { flex: 1; background: #222; }
-        
-        /* Цвета иконок на карте */
-        .marker-red { filter: drop-shadow(0 0 0 2px #e74c3c) hue-rotate(0deg) brightness(1.2); }
-        .marker-green { filter: drop-shadow(0 0 0 2px #27ae60) hue-rotate(120deg) brightness(1.1); }
-        .marker-blue { filter: drop-shadow(0 0 0 2px #3498db) hue-rotate(210deg); }
-        .marker-gray { filter: grayscale(1) drop-shadow(0 0 0 2px #95a5a6); }
-        .marker-black { filter: drop-shadow(0 0 0 2px #2c3e50); }
     </style>
 </head>
 <body>
@@ -44,42 +37,52 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Настройки карты (как раньше)
-        const imgWidth = 6348; const imgHeight = 7418; const imgUrl = 'map.png';
+        // --- НАСТРОЙКА КАРТЫ ---
+        const imgWidth = 6348;
+        const imgHeight = 7418;
+        const imgUrl = 'map.png';
+
         const map = L.map('map', { crs: L.CRS.Simple, minZoom: -5, maxZoom: 5 });
         const bounds = [[0, 0], [imgHeight, imgWidth]];
         L.imageOverlay(imgUrl, bounds).addTo(map);
         map.fitBounds(bounds);
 
-        // Цвета для иконок
-        const colors = ['black', 'green', 'red', 'gray', 'blue'];
+        // --- ПАРАМЕТРЫ ГЕКСА (в координатах карты) ---
+        // Подставь реальные значения после замера по кликам.
+        // Пока примерные числа, чтобы схема работала.
+        const HEX_WIDTH = 415;   // расстояние между центрами соседних гексов по X
+        const HEX_HEIGHT = 415;  // расстояние между центрами по Y
 
-        // Загружаем иконки из папки icons/
+        // Масштаб иконки относительно гекса: 0.6 = 60% стороны
+        const ICON_SCALE = 0.6;
+
+        // --- СПИСОК ИКОНок ---
         const ICON_FILES = ['test.svg'];
 
         function loadIcons() {
-        const iconsPanel = document.getElementById('iconsPanel');
+            const iconsPanel = document.getElementById('iconsPanel');
 
-        ICON_FILES.forEach(filename => {
-        const icon = document.createElement('div');
-        icon.className = 'icon-item';
-        icon.draggable = true;
-        icon.dataset.filename = filename;
+            ICON_FILES.forEach(filename => {
+                const icon = document.createElement('div');
+                icon.className = 'icon-item';
+                icon.draggable = true;
+                icon.dataset.filename = filename;
 
-        const img = document.createElement('img');
-        img.src = `icons/${filename}`;   // путь относительный от index.html
-        img.alt = filename;
-        img.style.width = '100%';
-        img.style.height = '100%';
+                const img = document.createElement('img');
+                img.src = `icons/${filename}`;
+                img.alt = filename;
+                img.style.width = '100%';
+                img.style.height = '100%';
 
-        icon.appendChild(img);
-        icon.addEventListener('dragstart', handleDragStart);
-        iconsPanel.appendChild(icon);
-        });
+                icon.appendChild(img);
+                icon.addEventListener('dragstart', handleDragStart);
+                iconsPanel.appendChild(icon);
+            });
         }
 
-        // Drag & Drop обработчики
+        // --- DRAG & DROP ИЗ ПАНЕЛИ ---
         let draggedIcon = null;
+
         function handleDragStart(e) {
             const el = e.currentTarget;
             const filename = el.dataset.filename;
@@ -87,9 +90,7 @@
 
             draggedIcon = filename;
             e.dataTransfer.setData('text/plain', filename);
-            e.target.style.opacity = '0.5';
-
-            console.log('target:', e.target.tagName, 'currentTarget:', e.currentTarget.tagName, 'dataset:', e.currentTarget.dataset);
+            el.style.opacity = '0.5';
         }
 
         map.getContainer().addEventListener('dragover', e => {
@@ -103,42 +104,32 @@
             const filename = e.dataTransfer.getData('text/plain');
             if (!filename) return;
 
-            const color = colors[Math.floor(Math.random() * colors.length)]; // Случайный цвет
-            const latlng = map.mouseEventToLatLng(e);
-            
-            console.log('latlng on drop:', latlng);
-            addDraggableMarker(filename, latlng, color);
+            const latlng = map.mouseEventToLatLng(e); // точка на карте
+            addHexIconOverlay(filename, latlng);
         });
 
-        // Добавление метки на карту
-        function addDraggableMarker(filename, latlng, color) {
+        // --- ИКОНКА КАК OVERLAY ФИКСИРОВАННОГО РАЗМЕРА ОТНОСИТЕЛЬНО ГЕКСА ---
+        function addHexIconOverlay(filename, centerLatLng) {
             const iconUrl = `icons/${filename}`;
-            const customIcon = L.divIcon({
-                html: `<img src="${iconUrl}" class="leaflet-marker-icon marker-${color}" style="width:35px;height:35px;"/>`,
-                iconSize: [48, 48],
-                className: 'custom-marker',
-                iconAnchor: [24, 24]
-            });
-            
-            const marker = L.marker(latlng, { icon: customIcon, draggable: true }).addTo(map);
-            
-            marker.bindPopup(`
-                <div style="text-align:center">
-                    <img src="${iconUrl}" style="width:60px;height:60px;margin-bottom:8px">
-                    <h3>${filename.replace('.svg', '').replace(/[_-]/g, ' ').toUpperCase()}</h3>
-                    <button onclick="this.closest('.leaflet-popup')._closePopup()" style="background:#007bff;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer">Закрыть</button>
-                </div>
-            `);
-            
-            // Drag метки на карте
-            marker.on('dragend', function(e) {
-                marker.setLatLng(e.target.getLatLng());
-            });
+
+            const halfH = HEX_HEIGHT * ICON_SCALE / 2;
+            const halfW = HEX_WIDTH * ICON_SCALE / 2;
+
+            const bounds = [
+                [centerLatLng.lat - halfH, centerLatLng.lng - halfW],
+                [centerLatLng.lat + halfH, centerLatLng.lng + halfW]
+            ];
+
+            L.imageOverlay(iconUrl, bounds, {
+                interactive: true   // можно будет вешать клики
+            }).addTo(map);
         }
 
-        // Инициализация
+        // --- ОТЛАДКА: ПОСМОТРЕТЬ КООРДИНАТЫ КЛИКА ---
+        map.on('click', e => console.log("Координаты:", e.latlng));
+
+        // ИНИЦИАЛИЗАЦИЯ
         loadIcons();
-        map.on('click', e => console.log("Координаты: [" + e.latlng.lat + ", " + e.latlng.lng + "]"));
     </script>
 </body>
 </html>
