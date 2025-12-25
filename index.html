@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная Карта</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
+        .main-container { display: flex; height: 100vh; }
+        
+        /* Левая панель с иконками */
+        .icons-panel {
+            width: 120px; background: #2a2a2a; padding: 20px 10px; 
+            overflow-y: auto; border-right: 2px solid #444;
+        }
+        .icon-item {
+            width: 48px; height: 48px; margin: 8px auto; cursor: grab;
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+            transition: transform 0.2s;
+        }
+        .icon-item:hover { transform: scale(1.1); }
+        .icon-item:active { cursor: grabbing; }
+        
+        /* Карта */
+        #map { flex: 1; background: #222; }
+        
+        /* Цвета иконок на карте */
+        .marker-red { filter: drop-shadow(0 0 0 2px #e74c3c) hue-rotate(0deg) brightness(1.2); }
+        .marker-green { filter: drop-shadow(0 0 0 2px #27ae60) hue-rotate(120deg) brightness(1.1); }
+        .marker-blue { filter: drop-shadow(0 0 0 2px #3498db) hue-rotate(210deg); }
+        .marker-gray { filter: grayscale(1) drop-shadow(0 0 0 2px #95a5a6); }
+        .marker-black { filter: drop-shadow(0 0 0 2px #2c3e50); }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Левая панель иконок -->
+        <div class="icons-panel" id="iconsPanel"></div>
+        
+        <!-- Карта -->
+        <div id="map"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Настройки карты (как раньше)
+        const imgWidth = 6348; const imgHeight = 7418; const imgUrl = 'map.png';
+        const map = L.map('map', { crs: L.CRS.Simple, minZoom: -5, maxZoom: 5 });
+        const bounds = [[0, 0], [imgHeight, imgWidth]];
+        L.imageOverlay(imgUrl, bounds).addTo(map);
+        map.fitBounds(bounds);
+
+        // Цвета для иконок
+        const colors = ['black', 'green', 'red', 'gray', 'blue'];
+
+        // Загружаем иконки из папки icons/
+        async function loadIcons() {
+            const iconsPanel = document.getElementById('iconsPanel');
+            const response = await fetch('icons/');
+            // Показываем все SVG файлы (можно расширить)
+            const iconFiles = ['test.svg'];
+            
+            iconFiles.forEach(filename => {
+                const icon = document.createElement('div');
+                icon.className = 'icon-item';
+                icon.draggable = true;
+                icon.dataset.filename = filename;
+                icon.innerHTML = `<svg class="icon-svg" style="width:100%;height:100%;color:#fff"><use href="icons/${filename}#icon"/></svg>`;
+                icon.addEventListener('dragstart', handleDragStart);
+                iconsPanel.appendChild(icon);
+            });
+        }
+
+        // Drag & Drop обработчики
+        let draggedIcon = null;
+        function handleDragStart(e) {
+            draggedIcon = e.target.dataset.filename;
+            e.dataTransfer.setData('text/plain', draggedIcon);
+            e.target.style.opacity = '0.5';
+        }
+
+        map.getContainer().addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        });
+
+        map.getContainer().addEventListener('drop', function(e) {
+            e.preventDefault();
+            const filename = e.dataTransfer.getData('text/plain');
+            const color = colors[Math.floor(Math.random() * colors.length)]; // Случайный цвет
+            const coords = map.mouseEventToLayerPoint(e).toBounds([0,0]);
+            
+            addDraggableMarker(filename, coords.getCenter(), color);
+        });
+
+        // Добавление метки на карту
+        function addDraggableMarker(filename, latlng, color) {
+            const iconUrl = `icons/${filename}`;
+            const customIcon = L.divIcon({
+                html: `<img src="${iconUrl}" class="leaflet-marker-icon marker-${color}" style="width:48px;height:48px;"/>`,
+                iconSize: [48, 48],
+                className: 'custom-marker',
+                iconAnchor: [24, 24]
+            });
+            
+            const marker = L.marker(latlng, { icon: customIcon, draggable: true }).addTo(map);
+            
+            marker.bindPopup(`
+                <div style="text-align:center">
+                    <img src="${iconUrl}" style="width:60px;height:60px;margin-bottom:8px">
+                    <h3>${filename.replace('.svg', '').replace(/[_-]/g, ' ').toUpperCase()}</h3>
+                    <button onclick="this.closest('.leaflet-popup')._closePopup()" style="background:#007bff;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer">Закрыть</button>
+                </div>
+            `);
+            
+            // Drag метки на карте
+            marker.on('dragend', function(e) {
+                marker.setLatLng(e.target.getLatLng());
+            });
+        }
+
+        // Инициализация
+        loadIcons();
+        map.on('click', e => console.log("Координаты: [" + e.latlng.lat + ", " + e.latlng.lng + "]"));
+    </script>
+</body>
+</html>
